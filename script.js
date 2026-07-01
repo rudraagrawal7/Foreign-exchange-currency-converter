@@ -63,8 +63,8 @@ const CURRENCY_FLAGS = {
   'UAH': 'ua', 'USD': 'us', 'VND': 'vn', 'ZAR': 'za'
 };
 
-// State
-let state = {
+// State - Use const for object reference, we'll mutate properties
+const state = {
   currencies: {},
   rates: {},
   sendAmount: 1000,
@@ -309,7 +309,8 @@ function setupEventListeners() {
   document.getElementById('logBtn')?.addEventListener('click', logConversion);
   
   // Tabs
-  document.querySelectorAll('.tabs__trigger').forEach(btn => {
+  const tabTriggers = document.querySelectorAll('.tabs__trigger');
+  tabTriggers.forEach(btn => {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab;
       saveToStorage();
@@ -317,6 +318,29 @@ function setupEventListeners() {
         fetchHistory();
       }
       render();
+    });
+    
+    // Keyboard navigation for tabs
+    btn.addEventListener('keydown', (e) => {
+      let targetIndex;
+      const currentIndex = Array.from(tabTriggers).indexOf(btn);
+      
+      if (e.key === 'ArrowRight') {
+        targetIndex = (currentIndex + 1) % tabTriggers.length;
+      } else if (e.key === 'ArrowLeft') {
+        targetIndex = (currentIndex - 1 + tabTriggers.length) % tabTriggers.length;
+      } else if (e.key === 'Home') {
+        targetIndex = 0;
+      } else if (e.key === 'End') {
+        targetIndex = tabTriggers.length - 1;
+      }
+      
+      if (targetIndex !== undefined) {
+        e.preventDefault();
+        const targetTab = tabTriggers[targetIndex];
+        targetTab.focus();
+        targetTab.click();
+      }
     });
   });
   
@@ -487,9 +511,9 @@ function renderConverter() {
   
   if (sendBtnEl) {
     sendBtnEl.innerHTML = `
-      <img src="${getFlagPath(state.sendCurrency)}" alt="${state.sendCurrency}" class="converter__flag">
+      <img src="${getFlagPath(state.sendCurrency)}" alt="" class="converter__flag" aria-hidden="true">
       <span>${state.sendCurrency}</span>
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
@@ -497,9 +521,9 @@ function renderConverter() {
   
   if (receiveBtnEl) {
     receiveBtnEl.innerHTML = `
-      <img src="${getFlagPath(state.receiveCurrency)}" alt="${state.receiveCurrency}" class="converter__flag">
+      <img src="${getFlagPath(state.receiveCurrency)}" alt="" class="converter__flag" aria-hidden="true">
       <span>${state.receiveCurrency}</span>
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
@@ -511,7 +535,7 @@ function renderConverter() {
   
   if (favoriteBtnEl) {
     favoriteBtnEl.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         ${isFavorite() 
           ? '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>'
           : '<path d="M22 9.27l-7.19-.62L12 2 9.19 8.65 2 9.27l5.23 5.07L5.82 21 12 17.77 18.18 21l-1.41-6.66L22 9.27zm-10 6.37l-4.05 2.17 1.02-4.79-3.52-3.42 4.83-.42L12 5.59l1.72 3.67 4.83.42-3.52 3.42 1.02 4.79L12 15.64z" fill="currentColor"/>'
@@ -593,8 +617,8 @@ function renderCurrencyPicker() {
       : currency === state.receiveCurrency;
     
     return `
-      <li class="currency-picker__item ${isSelected ? 'currency-picker__item--selected' : ''}" data-currency="${currency}">
-        <img src="${getFlagPath(currency)}" alt="${currency}" class="currency-picker__flag">
+      <li class="currency-picker__item ${isSelected ? 'currency-picker__item--selected' : ''}" data-currency="${currency}" role="option" aria-selected="${isSelected}">
+        <img src="${getFlagPath(currency)}" alt="" class="currency-picker__flag" aria-hidden="true">
         <span class="currency-picker__code">${currency}</span>
         <span class="currency-picker__name">${state.currencies[currency] || currency}</span>
         ${isSelected ? '<span class="currency-picker__check">✓</span>' : ''}
@@ -641,6 +665,7 @@ function renderTabs() {
   document.querySelectorAll('.tabs__trigger').forEach(btn => {
     btn.classList.toggle('tabs__trigger--active', btn.dataset.tab === state.activeTab);
     btn.setAttribute('aria-selected', btn.dataset.tab === state.activeTab);
+    btn.setAttribute('tabindex', btn.dataset.tab === state.activeTab ? '0' : '-1');
   });
   
   document.querySelectorAll('.tabs__panel').forEach(panel => {
@@ -759,13 +784,13 @@ function renderCompare() {
     
     html += `
       <li class="compare__item" data-currency="${currency}">
-        <img src="${getFlagPath(currency)}" alt="${currency}" class="compare__flag">
+        <img src="${getFlagPath(currency)}" alt="" class="compare__flag" aria-hidden="true">
         <span class="compare__code">${currency}</span>
         <span class="compare__name">${state.currencies[currency] || currency}</span>
         <span class="compare__amount">${formatNumber(amount, 2)}</span>
         <span class="compare__rate">@ ${formatNumber(rate, 4)}</span>
-        <button class="compare__pin-btn ${isPinned ? 'compare__pin-btn--pinned' : ''}" data-currency="${currency}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button type="button" class="compare__pin-btn ${isPinned ? 'compare__pin-btn--pinned' : ''}" data-currency="${currency}" aria-label="${isPinned ? 'Unpin' : 'Pin'} ${currency}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             ${isPinned 
               ? '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>'
               : '<path d="M22 9.27l-7.19-.62L12 2 9.19 8.65 2 9.27l5.23 5.07L5.82 21 12 17.77 18.18 21l-1.41-6.66L22 9.27zm-10 6.37l-4.05 2.17 1.02-4.79-3.52-3.42 4.83-.42L12 5.59l1.72 3.67 4.83.42-3.52 3.42 1.02 4.79L12 15.64z" fill="currentColor"/>'
@@ -836,8 +861,8 @@ function renderFavorites() {
         <span class="favorites__change favorites__change--${isPositive ? 'positive' : 'negative'}">
           ${isPositive ? '▲' : '▼'} ${formatNumber(Math.abs(change), 2)}%
         </span>
-        <button class="favorites__unpin-btn" data-pair="${fav.pair}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button type="button" class="favorites__unpin-btn" data-pair="${fav.pair}" aria-label="Unpin ${fav.pair}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
           </svg>
         </button>
@@ -904,8 +929,8 @@ function renderLog() {
         <span class="log__amount-send">${formatNumber(conv.fromAmount, 2)} ${conv.fromCurrency}</span>
         <span class="log__arrow">→</span>
         <span class="log__amount-receive">${formatNumber(conv.toAmount, 2)} ${conv.toCurrency}</span>
-        <button class="log__delete-btn" data-id="${conv.id}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button type="button" class="log__delete-btn" data-id="${conv.id}" aria-label="Delete conversion">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
