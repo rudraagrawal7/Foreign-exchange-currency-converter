@@ -76,8 +76,14 @@ const state = {
   activeRange: '1m',
   historyData: null,
   pickerOpen: false,
-  pickerType: null
+  pickerType: null,
+  prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches
 };
+
+// Listen for changes to reduced motion preference
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+  state.prefersReducedMotion = e.matches;
+});
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -152,7 +158,7 @@ async function fetchRates(base = state.sendCurrency) {
 // Fetch history data
 async function fetchHistory() {
   const end = new Date();
-  let start = new Date();
+  const start = new Date();
   
   switch (state.activeRange) {
     case '1d': start.setDate(end.getDate() - 1); break;
@@ -590,7 +596,7 @@ function renderCurrencyPicker() {
       html += `
         <div class="currency-picker__section">
           <div class="currency-picker__section-title">Popular (${popular.length})</div>
-          <ul class="currency-picker__list">
+          <ul class="currency-picker__list" role="listbox">
             ${popular.map(currency => renderCurrencyItem(currency)).join('')}
           </ul>
         </div>
@@ -601,7 +607,7 @@ function renderCurrencyPicker() {
       html += `
         <div class="currency-picker__section">
           <div class="currency-picker__section-title">Other currencies (${other.length})</div>
-          <ul class="currency-picker__list">
+          <ul class="currency-picker__list" role="listbox">
             ${other.map(currency => renderCurrencyItem(currency)).join('')}
           </ul>
         </div>
@@ -670,7 +676,8 @@ function renderTabs() {
   
   document.querySelectorAll('.tabs__panel').forEach(panel => {
     panel.classList.toggle('tabs__panel--active', 
-      panel.id === `${state.activeTab}Panel`);
+      panel.id === `${state.activeTab}Panel`
+    );
   });
   
   // Update badges
